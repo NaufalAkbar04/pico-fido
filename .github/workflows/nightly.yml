@@ -1,57 +1,26 @@
-name: "Nightly deploy"
-
+name: "Build ESP32-S3 (unsigned)"
 on:
-  schedule:
-    - cron: '0 2 * * *'
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  nightly:
-    name: Deploy nightly
-    permissions:
-      contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        refs: [main, development]
+  build-esp32:
+    name: Build ESP32-S3
     runs-on: ubuntu-latest
-    env:
-      SIGNING_KEY_PATH: ${{ github.workspace }}/../private.pem
     steps:
-      - name: Validate signing secret
-        run: |
-          test -n "${{ secrets.PRIVATE_KEY_B64 }}" || {
-            echo "PRIVATE_KEY_B64 is required for nightly signed releases." >&2
-            exit 1
-          }
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.refs }}
+          ref: main
           submodules: 'recursive'
           persist-credentials: false
-      - name: Restore private key
+
+      - name: Build ESP32
         run: |
-          echo "${{ secrets.PRIVATE_KEY_B64 }}" | base64 -d > "${SIGNING_KEY_PATH}"
-          chmod 600 "${SIGNING_KEY_PATH}"
-      - name : Build
-        env:
-          PICO_SDK_PATH: ../pico-sdk
-          SECURE_BOOT_PKEY: ${{ github.workspace }}/../private.pem
-        run: |
-           ./workflows/autobuild.sh pico
-           ./build_pico_fido.sh --no-eddsa
-           ./workflows/autobuild.sh esp32
-      - name: Delete private key
-        if: always()
-        run: rm -f "${SIGNING_KEY_PATH}"
-      - name: Update nightly release
-        uses: pyTooling/Actions/releaser@v6.7.0
+          ./workflows/autobuild.sh esp32
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag: nightly-${{ matrix.refs }}
-          rm: true
-          token: ${{ secrets.GITHUB_TOKEN }}
-          files: release/*.*
+          name: pico-fido-esp32
+          path: release/*
+          if-no-files-found: warn
