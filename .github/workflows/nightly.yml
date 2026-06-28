@@ -21,10 +21,13 @@ jobs:
       - name: List output files
         if: always()
         run: |
-          echo "===== cari semua file .bin / .uf2 ====="
-          find . -type f \( -name "*.bin" -o -name "*.uf2" \) -not -path "*/.git/*"
-          echo "===== isi folder release (kalau ada) ====="
-          ls -la release || echo "folder release tidak ada"
+          echo "===== semua file .bin / .uf2 ====="
+          find . -type f \( -name "*.bin" -o -name "*.uf2" \) \
+            -not -path "*/.git/*" -not -path "*/managed_components/*"
+          echo "===== isi folder release ====="
+          ls -la release 2>/dev/null || echo "(tidak ada folder release)"
+          echo "===== isi folder build ====="
+          ls -la build 2>/dev/null || echo "(tidak ada folder build)"
 
       - name: Upload firmware artifact
         if: always()
@@ -33,6 +36,5 @@ jobs:
           name: pico-fido-esp32
           path: |
             release/**
-            **/*.bin
-            **/*.uf2
+            build/**/*.bin
           if-no-files-found: warn
