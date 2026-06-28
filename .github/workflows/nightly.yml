@@ -18,9 +18,21 @@ jobs:
         run: |
           ./workflows/autobuild.sh esp32
 
+      - name: List output files
+        if: always()
+        run: |
+          echo "===== cari semua file .bin / .uf2 ====="
+          find . -type f \( -name "*.bin" -o -name "*.uf2" \) -not -path "*/.git/*"
+          echo "===== isi folder release (kalau ada) ====="
+          ls -la release || echo "folder release tidak ada"
+
       - name: Upload firmware artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pico-fido-esp32
-          path: release/*
+          path: |
+            release/**
+            **/*.bin
+            **/*.uf2
           if-no-files-found: warn
